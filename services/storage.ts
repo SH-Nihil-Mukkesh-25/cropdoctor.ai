@@ -1,13 +1,39 @@
+import { Platform } from 'react-native';
 import { supabase } from './supabase';
 import { ScanRecord, DetectionResult } from '../types';
 
-/**
- * Save a completed scan to the user's history in Supabase.
- */
+async function toBase64DataUri(uri: string): Promise<string> {
+    if (uri.startsWith('data:')) return uri;
+
+    try {
+        if (Platform.OS === 'web') {
+            const response = await fetch(uri);
+            const blob = await response.blob();
+            return new Promise<string>((resolve, reject) => {
+                const reader = new FileReader();
+                reader.onloadend = () => resolve(reader.result as string);
+                reader.onerror = reject;
+                reader.readAsDataURL(blob);
+            });
+        } else {
+            const FileSystem = require('expo-file-system');
+            const base64 = await FileSystem.readAsStringAsync(uri, {
+                encoding: FileSystem.EncodingType.Base64,
+            });
+            return `data:image/jpeg;base64,${base64}`;
+        }
+    } catch (err) {
+        console.warn('Failed to convert image to base64, using original URI:', err);
+        return uri;
+    }
+}
+
 export async function saveToHistory(userId: string, scan: ScanRecord): Promise<void> {
+    const persistentUri = await toBase64DataUri(scan.imageUri);
+
     const { error } = await supabase.from('scan_history').insert({
         user_id: userId,
-        image_uri: scan.imageUri,
+        image_uri: persistentUri,
         disease: scan.result.disease,
         confidence: scan.result.confidence,
         recommendation: scan.result.recommendation,
@@ -19,9 +45,6 @@ export async function saveToHistory(userId: string, scan: ScanRecord): Promise<v
     }
 }
 
-/**
- * Get all scans for the current user, newest first.
- */
 export async function getHistory(userId: string): Promise<ScanRecord[]> {
     const { data, error } = await supabase
         .from('scan_history')
@@ -47,9 +70,6 @@ export async function getHistory(userId: string): Promise<ScanRecord[]> {
     }));
 }
 
-/**
- * Get a single scan by its ID.
- */
 export async function getScanById(userId: string, id: string): Promise<ScanRecord | null> {
     const { data, error } = await supabase
         .from('scan_history')
@@ -72,9 +92,6 @@ export async function getScanById(userId: string, id: string): Promise<ScanRecor
     };
 }
 
-/**
- * Delete all scans for the current user.
- */
 export async function clearHistory(userId: string): Promise<void> {
     const { error } = await supabase
         .from('scan_history')
@@ -86,9 +103,6 @@ export async function clearHistory(userId: string): Promise<void> {
     }
 }
 
-/**
- * Generate a unique scan ID (used as a client-side reference before DB insert).
- */
 export function generateScanId(): string {
     return crypto.randomUUID?.() || `scan_${Date.now()}_${Math.random().toString(36).substring(2, 9)}`;
 }

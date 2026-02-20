@@ -1,27 +1,9 @@
-#!/usr/bin/env bash
-# ========================================================
-# CropGuard — Database Setup Script
-# ========================================================
-# This script:
-#   1. Runs the schema SQL against your Supabase project
-#   2. Creates default test users via the Supabase Auth API
-#   3. Seeds sample scan_history rows for those users
-#
-# Usage:
-#   chmod +x supabase/setup_db.sh
-#   ./supabase/setup_db.sh
-#
-# Prerequisites:
-#   - curl and jq installed
-#   - .env file with EXPO_PUBLIC_SUPABASE_URL and EXPO_PUBLIC_SUPABASE_ANON_KEY
-# ========================================================
-
 set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 PROJECT_DIR="$(dirname "$SCRIPT_DIR")"
 
-# Load env
+
 if [ -f "$PROJECT_DIR/.env" ]; then
   export $(grep -v '^#' "$PROJECT_DIR/.env" | xargs)
 fi
@@ -29,12 +11,11 @@ fi
 SUPABASE_URL="${EXPO_PUBLIC_SUPABASE_URL:?Missing EXPO_PUBLIC_SUPABASE_URL in .env}"
 SUPABASE_KEY="${EXPO_PUBLIC_SUPABASE_ANON_KEY:?Missing EXPO_PUBLIC_SUPABASE_ANON_KEY in .env}"
 
-echo "🌱 CropGuard Database Setup"
+echo "CropGuard Database Setup"
 echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━"
-echo "📡 Supabase URL: $SUPABASE_URL"
+echo "Supabase URL: $SUPABASE_URL"
 echo ""
 
-# ---- Helper: run SQL via the Supabase REST API ----
 run_sql() {
   local sql="$1"
   local response
@@ -48,7 +29,7 @@ run_sql() {
   echo "$response"
 }
 
-# ---- Helper: sign up a user via Supabase Auth ----
+
 create_user() {
   local email="$1"
   local password="$2"
@@ -71,17 +52,15 @@ create_user() {
   user_id=$(echo "$response" | python3 -c "import sys,json; d=json.load(sys.stdin); print(d.get('id') or d.get('user',{}).get('id',''))" 2>/dev/null || echo "")
 
   if [ -n "$user_id" ] && [ "$user_id" != "" ]; then
-    echo "✅  (id: $user_id)"
+    echo "(id: $user_id)"
     echo "$user_id"
   else
     local err_msg
     err_msg=$(echo "$response" | python3 -c "import sys,json; print(json.load(sys.stdin).get('msg','unknown error'))" 2>/dev/null || echo "unknown")
-    echo "⚠️  $err_msg"
+    echo "$err_msg"
     echo ""
   fi
 }
-
-# ---- Helper: insert a scan record ----
 insert_scan() {
   local user_id="$1"
   local disease="$2"
@@ -104,11 +83,8 @@ insert_scan() {
     }" > /dev/null 2>&1
 }
 
-# ========================================================
-# STEP 1: Apply Schema
-# ========================================================
-echo "📋 Step 1: Applying schema..."
-echo "   ℹ️  Please run supabase/schema.sql manually in the"
+echo "Step 1: Applying schema..."
+echo "   Please run supabase/schema.sql manually in the"
 echo "      Supabase Dashboard → SQL Editor."
 echo "      (The REST API doesn't support DDL statements.)"
 echo ""
@@ -116,11 +92,8 @@ echo "   Open: ${SUPABASE_URL//.supabase.co/.supabase.co}/project/default/sql"
 echo ""
 read -p "   Press Enter after you've run schema.sql... " _
 
-# ========================================================
-# STEP 2: Create Default Users
-# ========================================================
 echo ""
-echo "👤 Step 2: Creating default test users..."
+echo "Step 2: Creating default test users..."
 
 USER1_ID=$(create_user "farmer1@cropguard.app" "farmer123" "Ravi Kumar" | tail -1)
 USER2_ID=$(create_user "farmer2@cropguard.app" "farmer123" "Priya Devi" | tail -1)
@@ -128,10 +101,7 @@ USER3_ID=$(create_user "admin@cropguard.app"   "admin123"  "Admin"      | tail -
 
 echo ""
 
-# ========================================================
-# STEP 3: Seed Sample Scan History
-# ========================================================
-echo "🌿 Step 3: Seeding sample scan history..."
+echo "Step 3: Seeding sample scan history..."
 
 if [ -n "$USER1_ID" ]; then
   echo "  Seeding scans for farmer1..."
@@ -153,7 +123,7 @@ if [ -n "$USER1_ID" ]; then
     "Apply foliar fungicides like azoxystrobin at first sign of pustules. Plant resistant hybrids in future seasons." \
     "https://images.unsplash.com/photo-1574323347407-f5e1ad6d020b?w=400"
 
-  echo "  ✅ 3 scans seeded for farmer1"
+  echo "  3 scans seeded for farmer1"
 fi
 
 if [ -n "$USER2_ID" ]; then
@@ -170,16 +140,16 @@ if [ -n "$USER2_ID" ]; then
     "The plant appears to be healthy. No treatment is necessary. Continue regular monitoring and care." \
     "https://images.unsplash.com/photo-1537640538966-79f369143f8f?w=400"
 
-  echo "  ✅ 2 scans seeded for farmer2"
+  echo "  2 scans seeded for farmer2"
 fi
 
 echo ""
 echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━"
-echo "✅ Database setup complete!"
+echo "Database setup complete!"
 echo ""
 echo "Default test accounts:"
-echo "  📧 farmer1@cropguard.app / farmer123"
-echo "  📧 farmer2@cropguard.app / farmer123"
-echo "  📧 admin@cropguard.app   / admin123"
+echo "  farmer1@cropguard.app / farmer123"
+echo "  farmer2@cropguard.app / farmer123"
+echo "  admin@cropguard.app   / admin123"
 echo ""
 echo "You can now start the app with: npx expo start --web"

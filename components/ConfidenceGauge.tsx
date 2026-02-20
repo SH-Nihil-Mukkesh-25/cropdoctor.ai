@@ -1,74 +1,81 @@
 import React, { useEffect, useRef } from 'react';
-import { View, StyleSheet, Animated, Easing } from 'react-native';
-import { Colors } from '../constants/theme';
+import { View, Text, StyleSheet, Animated, Easing } from 'react-native';
+import Svg, { Circle } from 'react-native-svg';
+import { Colors, FontSize } from '../constants/theme';
 
-interface ConfidenceGaugeProps {
-    confidence: number; // 0 to 1
-    size?: number;
-}
+const AnimatedCircle = Animated.createAnimatedComponent(Circle);
 
-export default function ConfidenceGauge({ confidence, size = 100 }: ConfidenceGaugeProps) {
+interface Props { confidence: number; size?: number; }
+
+export default function ConfidenceGauge({ confidence, size = 150 }: Props) {
     const animValue = useRef(new Animated.Value(0)).current;
-    const percentage = Math.round(confidence * 100);
+    const pct = Math.round(confidence * 100);
+    const sw = size * 0.065;
+    const r = (size - sw) / 2;
+    const circ = 2 * Math.PI * r;
 
     useEffect(() => {
         Animated.timing(animValue, {
-            toValue: confidence,
-            duration: 1200,
-            easing: Easing.out(Easing.cubic),
-            useNativeDriver: false,
+            toValue: confidence, duration: 1400,
+            easing: Easing.out(Easing.cubic), useNativeDriver: false,
         }).start();
     }, [confidence]);
 
-    const getColor = () => {
-        if (confidence >= 0.8) return Colors.healthy;
-        if (confidence >= 0.5) return Colors.warning;
-        return Colors.disease;
-    };
+    const color = confidence >= 0.8 ? Colors.healthy
+        : confidence >= 0.5 ? Colors.warning
+            : Colors.danger;
 
-    const barWidth = animValue.interpolate({
-        inputRange: [0, 1],
-        outputRange: ['0%', '100%'],
+    const label = confidence >= 0.8 ? 'High'
+        : confidence >= 0.5 ? 'Medium'
+            : 'Low';
+
+    const offset = animValue.interpolate({
+        inputRange: [0, 1], outputRange: [circ, 0],
     });
 
     return (
-        <View style={[styles.container, { width: size }]}>
-            <View style={styles.barBackground}>
-                <Animated.View
-                    style={[
-                        styles.barFill,
-                        {
-                            width: barWidth,
-                            backgroundColor: getColor(),
-                        },
-                    ]}
+        <View style={[s.wrap, { width: size, height: size }]}>
+            <View style={[s.glowBackdrop, {
+                width: size * 0.7, height: size * 0.7, borderRadius: size * 0.35,
+                backgroundColor: confidence >= 0.8 ? Colors.healthyGlow
+                    : confidence >= 0.5 ? Colors.warningGlow
+                        : Colors.dangerGlow,
+            }]} />
+            <Svg width={size} height={size} style={s.svg}>
+                <Circle
+                    cx={size / 2} cy={size / 2} r={r}
+                    stroke="rgba(255, 255, 255, 0.08)"
+                    strokeWidth={sw} fill="none"
                 />
+                <AnimatedCircle
+                    cx={size / 2} cy={size / 2} r={r}
+                    stroke={color} strokeWidth={sw}
+                    fill="none" strokeLinecap="round"
+                    strokeDasharray={`${circ}`}
+                    strokeDashoffset={offset}
+                    rotation="-90"
+                    origin={`${size / 2}, ${size / 2}`}
+                />
+            </Svg>
+            <View style={s.center}>
+                <Text style={[s.pct, { color, fontSize: size * 0.22 }]}>{pct}%</Text>
+                <Text style={[s.lbl, { color }]}>{label}</Text>
             </View>
-            <Animated.Text style={[styles.label, { color: getColor() }]}>
-                {percentage}%
-            </Animated.Text>
         </View>
     );
 }
 
-const styles = StyleSheet.create({
-    container: {
-        alignItems: 'center',
-        gap: 6,
+const s = StyleSheet.create({
+    wrap: { justifyContent: 'center', alignItems: 'center' },
+    svg: { position: 'absolute' },
+    glowBackdrop: {
+        position: 'absolute',
+        opacity: 0.3,
     },
-    barBackground: {
-        width: '100%',
-        height: 8,
-        backgroundColor: Colors.surfaceLight,
-        borderRadius: 4,
-        overflow: 'hidden',
-    },
-    barFill: {
-        height: '100%',
-        borderRadius: 4,
-    },
-    label: {
-        fontSize: 14,
-        fontWeight: '700',
+    center: { alignItems: 'center', gap: 2 },
+    pct: { fontWeight: '700', letterSpacing: -0.5 },
+    lbl: {
+        fontSize: FontSize.xs, fontWeight: '700',
+        textTransform: 'uppercase', letterSpacing: 1.5, opacity: 0.8,
     },
 });

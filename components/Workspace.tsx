@@ -1,7 +1,8 @@
 import React, { useState } from 'react';
 import { View, Text, StyleSheet } from 'react-native';
+import { Ionicons } from '@expo/vector-icons';
 import { DetectionResult, ScanRecord } from '../types';
-import { Colors, BorderRadius, Spacing, FontSize } from '../constants/theme';
+import { Colors, BorderRadius, Spacing, FontSize, Shadows, Glass } from '../constants/theme';
 import ImageUploader from './ImageUploader';
 import ResultsView from './ResultsView';
 import { detectDisease } from '../services/api';
@@ -20,78 +21,48 @@ export default function Workspace({ userId, selectedScan, onScanComplete, onNewS
     const [result, setResult] = useState<DetectionResult | null>(null);
     const [error, setError] = useState<string | null>(null);
 
-    // If a cached scan is selected from sidebar, show its results
     if (selectedScan) {
         return (
             <View style={styles.container}>
-                <ResultsView
-                    imageUri={selectedScan.imageUri}
-                    result={selectedScan.result}
-                    onNewScan={onNewScan}
-                    isFromHistory={true}
-                />
+                <ResultsView imageUri={selectedScan.imageUri} result={selectedScan.result}
+                    onNewScan={onNewScan} isFromHistory={true} />
             </View>
         );
     }
 
-    // If we have a new result, show it
     if (result && imageUri) {
         return (
             <View style={styles.container}>
-                <ResultsView
-                    imageUri={imageUri}
-                    result={result}
-                    onNewScan={onNewScan}
-                />
+                <ResultsView imageUri={imageUri} result={result} onNewScan={onNewScan} />
             </View>
         );
     }
 
-    // Upload mode
     const handleSubmit = async () => {
         if (!imageUri) return;
-        setLoading(true);
-        setError(null);
-
+        setLoading(true); setError(null);
         try {
-            const detectionResult = await detectDisease(imageUri);
-            setResult(detectionResult);
-
-            // Save to user-specific history in Supabase
-            const scan: ScanRecord = {
-                id: generateScanId(),
-                imageUri,
-                result: detectionResult,
-                timestamp: Date.now(),
-            };
+            const det = await detectDisease(imageUri);
+            setResult(det);
+            const scan: ScanRecord = { id: generateScanId(), imageUri, result: det, timestamp: Date.now() };
             await saveToHistory(userId, scan);
             onScanComplete();
         } catch (e: any) {
             setError(e.message || 'Analysis failed. Please try again.');
-        } finally {
-            setLoading(false);
-        }
+        } finally { setLoading(false); }
     };
 
     return (
         <View style={styles.container}>
-            <ImageUploader
-                imageUri={imageUri}
-                onImageSelected={(uri) => {
-                    setImageUri(uri);
-                    setError(null);
-                }}
-                onRemoveImage={() => {
-                    setImageUri(null);
-                    setError(null);
-                }}
-                loading={loading}
-                onSubmit={handleSubmit}
-            />
+            <ImageUploader imageUri={imageUri}
+                onImageSelected={(uri) => { setImageUri(uri); setError(null); }}
+                onRemoveImage={() => { setImageUri(null); setError(null); }}
+                loading={loading} onSubmit={handleSubmit} />
             {error && (
-                <View style={styles.errorContainer}>
+                <View style={styles.errorWrap}>
                     <View style={styles.errorBox}>
-                        <Text style={styles.errorText}>❌  {error}</Text>
+                        <Ionicons name="alert-circle" size={16} color={Colors.warning} />
+                        <Text style={styles.errorText}>{error}</Text>
                     </View>
                 </View>
             )}
@@ -100,26 +71,13 @@ export default function Workspace({ userId, selectedScan, onScanComplete, onNewS
 }
 
 const styles = StyleSheet.create({
-    container: {
-        flex: 1,
-        backgroundColor: Colors.background,
-    },
-    errorContainer: {
-        position: 'absolute',
-        bottom: 20,
-        left: 20,
-        right: 20,
-    },
+    container: { flex: 1, backgroundColor: Colors.background },
+    errorWrap: { position: 'absolute', bottom: 20, left: 20, right: 20 },
     errorBox: {
-        backgroundColor: Colors.disease + '22',
-        borderWidth: 1,
-        borderColor: Colors.disease,
-        borderRadius: BorderRadius.md,
-        padding: Spacing.md,
+        flexDirection: 'row', alignItems: 'center', gap: Spacing.sm,
+        backgroundColor: Colors.warningBg, borderRadius: BorderRadius.md,
+        padding: Spacing.md, ...Shadows.sm,
+        borderWidth: 1, borderColor: Colors.warningGlow,
     },
-    errorText: {
-        color: Colors.disease,
-        fontSize: FontSize.sm,
-        fontWeight: '600',
-    },
+    errorText: { color: Colors.warning, fontSize: FontSize.sm, fontWeight: '500', flex: 1 },
 });

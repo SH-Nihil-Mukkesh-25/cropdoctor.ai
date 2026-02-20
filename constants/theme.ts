@@ -1,45 +1,57 @@
 export const Colors = {
-    // Primary greens — agriculture theme
-    primary: '#2D7D46',
-    primaryLight: '#4CAF50',
-    primaryDark: '#1B5E20',
-    primaryMuted: '#81C784',
+    primary: '#2D6A4F',
+    primaryDark: '#1B4332',
+    primaryDeep: '#0A1F14',
+    primaryLight: '#40916C',
+    primaryMuted: 'rgba(45, 106, 79, 0.3)',
 
-    // Accent
-    accent: '#FF9800',
-    accentLight: '#FFB74D',
-    accentDark: '#E65100',
+    accent: '#00E676',
+    accentMuted: 'rgba(0, 230, 118, 0.25)',
+    accentGlow: 'rgba(0, 230, 118, 0.15)',
+    accentSubtle: 'rgba(0, 230, 118, 0.08)',
 
-    // Status colors
-    healthy: '#43A047',
-    disease: '#E53935',
-    warning: '#FB8C00',
-    info: '#1E88E5',
+    healthy: '#95D5B2',
+    healthyBg: 'rgba(149, 213, 178, 0.12)',
+    healthyGlow: 'rgba(149, 213, 178, 0.3)',
 
-    // Dark background palette
-    background: '#0A1210',
-    surface: '#121F17',
-    surfaceLight: '#1A2E1F',
-    surfaceElevated: '#223328',
-    card: '#162A1C',
+    warning: '#FFB74D',
+    warningBg: 'rgba(255, 183, 77, 0.12)',
+    warningGlow: 'rgba(255, 183, 77, 0.3)',
 
-    // Text
-    text: '#E8F5E9',
-    textSecondary: '#A5D6A7',
-    textMuted: '#6B8F71',
+    danger: '#EF5350',
+    dangerBg: 'rgba(239, 83, 80, 0.12)',
+    dangerGlow: 'rgba(239, 83, 80, 0.3)',
+
+    background: '#0A1F14',
+    backgroundAlt: '#0D2818',
+    surface: 'rgba(255, 255, 255, 0.06)',
+    surfaceHover: 'rgba(255, 255, 255, 0.10)',
+    surfaceActive: 'rgba(255, 255, 255, 0.14)',
+    surfaceSolid: '#112D1E',
+
+    gradientStart: '#0A1F14',
+    gradientMid: '#143D2B',
+    gradientEnd: '#1B4332',
+
+    mintFrost: '#D8F3DC',
+    sage: '#B7E4C7',
+    seafoam: '#74C69D',
+
+    text: '#FFFFFF',
+    textSecondary: 'rgba(255, 255, 255, 0.72)',
+    textMuted: 'rgba(255, 255, 255, 0.42)',
     textOnPrimary: '#FFFFFF',
+    textDark: '#1A1A2E',
 
-    // Borders & overlays
-    border: '#2E4A33',
-    borderLight: '#3E5A43',
-    overlay: 'rgba(0, 0, 0, 0.6)',
-    overlayLight: 'rgba(0, 0, 0, 0.3)',
+    border: 'rgba(255, 255, 255, 0.10)',
+    borderLight: 'rgba(255, 255, 255, 0.06)',
+    borderAccent: 'rgba(0, 230, 118, 0.25)',
+    borderDark: 'rgba(255, 255, 255, 0.15)',
 
-    // Misc
+    overlay: 'rgba(0, 0, 0, 0.55)',
+
     white: '#FFFFFF',
     black: '#000000',
-    error: '#EF5350',
-    success: '#66BB6A',
 };
 
 export const Spacing = {
@@ -55,7 +67,8 @@ export const BorderRadius = {
     sm: 8,
     md: 12,
     lg: 16,
-    xl: 24,
+    xl: 20,
+    xxl: 28,
     full: 999,
 };
 
@@ -63,32 +76,88 @@ export const FontSize = {
     xs: 11,
     sm: 13,
     md: 15,
-    lg: 18,
-    xl: 22,
-    xxl: 28,
-    hero: 36,
+    lg: 17,
+    xl: 21,
+    xxl: 26,
+    hero: 34,
 };
 
 export const Shadows = {
+    xs: {
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 1 },
+        shadowOpacity: 0.2,
+        shadowRadius: 3,
+        elevation: 2,
+    },
     sm: {
         shadowColor: '#000',
         shadowOffset: { width: 0, height: 2 },
         shadowOpacity: 0.25,
-        shadowRadius: 4,
-        elevation: 3,
+        shadowRadius: 6,
+        elevation: 4,
     },
     md: {
         shadowColor: '#000',
         shadowOffset: { width: 0, height: 4 },
         shadowOpacity: 0.3,
-        shadowRadius: 8,
-        elevation: 6,
+        shadowRadius: 12,
+        elevation: 8,
     },
     lg: {
         shadowColor: '#000',
         shadowOffset: { width: 0, height: 8 },
         shadowOpacity: 0.35,
+        shadowRadius: 24,
+        elevation: 16,
+    },
+    glow: {
+        shadowColor: '#00E676',
+        shadowOffset: { width: 0, height: 0 },
+        shadowOpacity: 0.4,
         shadowRadius: 16,
-        elevation: 12,
+        elevation: 8,
+    },
+    glowSm: {
+        shadowColor: '#00E676',
+        shadowOffset: { width: 0, height: 0 },
+        shadowOpacity: 0.3,
+        shadowRadius: 8,
+        elevation: 4,
+    },
+    glowAccent: {
+        shadowColor: '#2D6A4F',
+        shadowOffset: { width: 0, height: 0 },
+        shadowOpacity: 0.5,
+        shadowRadius: 20,
+        elevation: 10,
+    },
+};
+
+export const Glass = {
+    card: {
+        backgroundColor: 'rgba(255, 255, 255, 0.06)',
+        borderWidth: 1,
+        borderColor: 'rgba(255, 255, 255, 0.10)',
+    },
+    cardHeavy: {
+        backgroundColor: 'rgba(255, 255, 255, 0.10)',
+        borderWidth: 1,
+        borderColor: 'rgba(255, 255, 255, 0.15)',
+    },
+    surface: {
+        backgroundColor: 'rgba(255, 255, 255, 0.04)',
+        borderWidth: 1,
+        borderColor: 'rgba(255, 255, 255, 0.08)',
+    },
+    input: {
+        backgroundColor: 'rgba(255, 255, 255, 0.06)',
+        borderWidth: 1,
+        borderColor: 'rgba(255, 255, 255, 0.12)',
+    },
+    inputFocused: {
+        backgroundColor: 'rgba(0, 230, 118, 0.06)',
+        borderWidth: 1,
+        borderColor: 'rgba(0, 230, 118, 0.35)',
     },
 };

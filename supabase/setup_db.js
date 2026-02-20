@@ -1,18 +1,3 @@
-#!/usr/bin/env node
-/**
- * CropGuard — Database Setup Script
- * 
- * This script:
- *   1. Creates default test users via the Supabase Auth API
- *   2. Seeds sample scan_history rows for those users
- * 
- * ⚠️  PREREQUISITE: You MUST run schema.sql in the Supabase 
- *    Dashboard SQL Editor FIRST before running this script.
- * 
- * Usage:
- *   node supabase/setup_db.js
- */
-
 const SUPABASE_URL = 'https://hgkapxvhucrrzsjseekj.supabase.co';
 const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imhna2FweHZodWNycnpzanNlZWtqIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzE1ODM5NzksImV4cCI6MjA4NzE1OTk3OX0._OchiprzYwshBMHe5HDigTJeXSFvMj3u5zr_7YhwMVM';
 
@@ -77,10 +62,10 @@ async function createUser(email, password, name) {
     const userId = data.id || data.user?.id;
 
     if (userId) {
-        console.log(`  ✅ ${email} → id: ${userId}`);
+        console.log(` ${email} → id: ${userId}`);
         return userId;
     } else {
-        console.log(`  ⚠️  ${email}: ${data.msg || data.message || JSON.stringify(data)}`);
+        console.log(` ${email}: ${data.msg || data.message || JSON.stringify(data)}`);
         return null;
     }
 }
@@ -122,19 +107,19 @@ async function insertScan(accessToken, userId, scan) {
 
     if (!res.ok) {
         const err = await res.text();
-        console.log(`    ❌ Failed to insert scan: ${err}`);
+        console.log(`Failed to insert scan: ${err}`);
         return false;
     }
     return true;
 }
 
 async function main() {
-    console.log('🌱 CropGuard Database Setup');
+    console.log('CropGuard Database Setup');
     console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
-    console.log(`📡 Supabase: ${SUPABASE_URL}`);
+    console.log(`Supabase: ${SUPABASE_URL}`);
     console.log('');
 
-    // Step 1: Create users
+
     console.log('👤 Step 1: Creating default users...');
     const userMap = {};
 
@@ -144,8 +129,8 @@ async function main() {
     }
     console.log('');
 
-    // Step 2: Seed scan history (need to log in as each user for RLS)
-    console.log('🌿 Step 2: Seeding sample scan history...');
+
+    console.log('Step 2: Seeding sample scan history...');
 
     for (const [email, scans] of Object.entries(SAMPLE_SCANS)) {
         const user = DEFAULT_USERS.find(u => u.email === email);
@@ -153,7 +138,7 @@ async function main() {
 
         const { userId, accessToken } = await loginUser(email, user.password);
         if (!userId || !accessToken) {
-            console.log(`  ⚠️  Cannot login as ${email}, skipping scans`);
+            console.log(`Cannot login as ${email}, skipping scans`);
             continue;
         }
 
@@ -161,17 +146,17 @@ async function main() {
         for (const scan of scans) {
             await insertScan(accessToken, userId, scan);
         }
-        console.log(`  ✅ Done`);
+        console.log(`Done`);
     }
 
     console.log('');
     console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
-    console.log('✅ Setup complete!');
+    console.log('Setup complete!');
     console.log('');
     console.log('Default test accounts:');
-    console.log('  📧 cropguard.farmer1@gmail.com / farmer123!');
-    console.log('  📧 cropguard.farmer2@gmail.com / farmer123!');
-    console.log('  📧 cropguard.admin@gmail.com   / admin12345');
+    console.log('cropguard.farmer1@gmail.com / farmer123!');
+    console.log('cropguard.farmer2@gmail.com / farmer123!');
+    console.log('cropguard.admin@gmail.com   / admin12345');
     console.log('');
     console.log('Start the app: npx expo start --web');
 }
