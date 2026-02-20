@@ -1,0 +1,20 @@
+import { useEffect } from 'react';
+import { Stack } from 'expo-router';
+import { StatusBar } from 'expo-status-bar';
+import { AuthProvider } from '../contexts/AuthContext';
+import { Colors } from '../constants/theme';
+
+export default function RootLayout() {
+    return (
+        <AuthProvider>
+            <StatusBar style="light" />
+            <Stack
+                screenOptions={{
+                    headerShown: false,
+                    contentStyle: { backgroundColor: Colors.background },
+                    animation: 'fade',
+                }}
+            />
+        </AuthProvider>
+    );
+}
