@@ -8,12 +8,13 @@
 -- Auto-created when a user signs up via a trigger.
 -- --------------------------------------------------------
 CREATE TABLE IF NOT EXISTS public.profiles (
-  id          UUID PRIMARY KEY REFERENCES auth.users(id) ON DELETE CASCADE,
-  email       TEXT NOT NULL,
-  name        TEXT,
-  avatar_url  TEXT,
-  created_at  TIMESTAMPTZ DEFAULT now() NOT NULL,
-  updated_at  TIMESTAMPTZ DEFAULT now() NOT NULL
+  id                  UUID PRIMARY KEY REFERENCES auth.users(id) ON DELETE CASCADE,
+  email               TEXT NOT NULL,
+  name                TEXT,
+  avatar_url          TEXT,
+  preferred_language  TEXT DEFAULT 'en-IN',
+  created_at          TIMESTAMPTZ DEFAULT now() NOT NULL,
+  updated_at          TIMESTAMPTZ DEFAULT now() NOT NULL
 );
 
 -- Enable RLS

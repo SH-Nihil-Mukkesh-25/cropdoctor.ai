@@ -6,6 +6,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { ScanRecord } from '../types';
 import { Colors, Spacing, FontSize, BorderRadius, Shadows, Glass } from '../constants/theme';
 import HistoryItem from './HistoryItem';
+import { Platform } from 'react-native';
 
 interface SidebarProps {
     history: ScanRecord[];
@@ -26,11 +27,11 @@ export default function Sidebar({
             Animated.sequence([
                 Animated.timing(pulseAnim, {
                     toValue: 1.04, duration: 1500,
-                    easing: Easing.inOut(Easing.sin), useNativeDriver: true,
+                    easing: Easing.inOut(Easing.sin), useNativeDriver: Platform.OS !== 'web',
                 }),
                 Animated.timing(pulseAnim, {
                     toValue: 1, duration: 1500,
-                    easing: Easing.inOut(Easing.sin), useNativeDriver: true,
+                    easing: Easing.inOut(Easing.sin), useNativeDriver: Platform.OS !== 'web',
                 }),
             ])
         ).start();

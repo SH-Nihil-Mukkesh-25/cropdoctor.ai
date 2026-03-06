@@ -43,12 +43,16 @@ export default function DashboardScreen() {
     const [historyLoading, setHistoryLoading] = useState(true);
     const [selectedScan, setSelectedScan] = useState<ScanRecord | null>(null);
     const [sidebarOpen, setSidebarOpen] = useState(false);
-    const [slideAnim] = useState(() => new Animated.Value(-screenWidth));
     const [workspaceKey, setWorkspaceKey] = useState(0);
 
     const isTablet = screenWidth >= BREAKPOINT;
     const sidebarWidth = isTablet ? 300 : Math.min(screenWidth * 0.85, 340);
     const userId = user?.id || '';
+
+    // FIX: Initialize slideAnim with -sidebarWidth (not -screenWidth) so the
+    // hidden position matches the value used in toggleSidebar/closeSidebar.
+    // Use useRef-style lazy init via useState to capture the correct initial offset.
+    const [slideAnim] = useState(() => new Animated.Value(-sidebarWidth));
 
     const loadHistory = useCallback(async () => {
         if (!userId) return;
@@ -60,34 +64,54 @@ export default function DashboardScreen() {
 
     useEffect(() => { loadHistory(); }, [loadHistory]);
 
-    const toggleSidebar = () => {
+    const toggleSidebar = useCallback(() => {
         const toValue = sidebarOpen ? -sidebarWidth : 0;
-        setSidebarOpen(!sidebarOpen);
-        Animated.spring(slideAnim, { toValue, useNativeDriver: true, friction: 8, tension: 65 }).start();
-    };
+        setSidebarOpen(prev => !prev);
+        Animated.spring(slideAnim, {
+            toValue,
+            useNativeDriver: true,
+            friction: 8,
+            tension: 65,
+        }).start();
+    }, [sidebarOpen, sidebarWidth, slideAnim]);
 
-    const closeSidebar = () => {
+    const closeSidebar = useCallback(() => {
         if (!sidebarOpen) return;
         setSidebarOpen(false);
         Animated.spring(slideAnim, {
-            toValue: -sidebarWidth, useNativeDriver: true, friction: 8, tension: 65
+            toValue: -sidebarWidth,
+            useNativeDriver: true,
+            friction: 8,
+            tension: 65,
         }).start();
-    };
+    }, [sidebarOpen, sidebarWidth, slideAnim]);
 
-    const handleSelectScan = (scan: ScanRecord) => { setSelectedScan(scan); if (!isTablet) closeSidebar(); };
-    const handleNewScan = () => { setSelectedScan(null); setWorkspaceKey(k => k + 1); if (!isTablet) closeSidebar(); };
+    const handleSelectScan = useCallback((scan: ScanRecord) => {
+        setSelectedScan(scan);
+        if (!isTablet) closeSidebar();
+    }, [isTablet, closeSidebar]);
 
-    const handleClearHistory = () => {
+    const handleNewScan = useCallback(() => {
+        setSelectedScan(null);
+        setWorkspaceKey(k => k + 1);
+        if (!isTablet) closeSidebar();
+    }, [isTablet, closeSidebar]);
+
+    const handleClearHistory = useCallback(() => {
         confirmAction('Clear History', 'Remove all saved scan results?', async () => {
-            await clearHistory(userId); setHistory([]); setSelectedScan(null); setWorkspaceKey(k => k + 1);
+            await clearHistory(userId);
+            setHistory([]);
+            setSelectedScan(null);
+            setWorkspaceKey(k => k + 1);
         });
-    };
+    }, [userId]);
 
-    const handleLogout = () => {
+    const handleLogout = useCallback(() => {
         confirmAction('Logout', 'Are you sure you want to log out?', async () => {
-            await logout(); router.replace('/login');
+            await logout();
+            router.replace('/login');
         });
-    };
+    }, [logout, router]);
 
     const userInitial = (user?.name || user?.email || '?')[0].toUpperCase();
 
@@ -132,26 +156,53 @@ export default function DashboardScreen() {
             <View style={styles.mainContent}>
                 {isTablet && (
                     <View style={[styles.sidebarFixed, { width: sidebarWidth }]}>
-                        <Sidebar history={history} selectedId={selectedScan?.id || null}
-                            onSelectScan={handleSelectScan} onClearHistory={handleClearHistory}
-                            loading={historyLoading} onNewScan={handleNewScan} />
+                        <Sidebar
+                            history={history}
+                            selectedId={selectedScan?.id ?? null}
+                            onSelectScan={handleSelectScan}
+                            onClearHistory={handleClearHistory}
+                            loading={historyLoading}
+                            onNewScan={handleNewScan}
+                        />
                     </View>
                 )}
                 <View style={styles.workspaceArea}>
-                    <Workspace key={workspaceKey} userId={userId} selectedScan={selectedScan}
-                        onScanComplete={loadHistory} onNewScan={handleNewScan} />
+                    <Workspace
+                        key={workspaceKey}
+                        userId={userId}
+                        selectedScan={selectedScan}
+                        onScanComplete={loadHistory}
+                        onNewScan={handleNewScan}
+                    />
                 </View>
                 {!isTablet && (
                     <>
                         {sidebarOpen && (
-                            <TouchableOpacity style={styles.backdrop} activeOpacity={1} onPress={closeSidebar} />
+                            <TouchableOpacity
+                                style={styles.backdrop}
+                                activeOpacity={1}
+                                onPress={closeSidebar}
+                            />
                         )}
-                        <Animated.View style={[styles.sidebarAnimated, {
-                            width: sidebarWidth, transform: [{ translateX: slideAnim }], top: 0, bottom: 0,
-                        }]}>
-                            <Sidebar history={history} selectedId={selectedScan?.id || null}
-                                onSelectScan={handleSelectScan} onClearHistory={handleClearHistory}
-                                loading={historyLoading} onNewScan={handleNewScan} />
+                        <Animated.View
+                            style={[
+                                styles.sidebarAnimated,
+                                {
+                                    width: sidebarWidth,
+                                    transform: [{ translateX: slideAnim }],
+                                    top: 0,
+                                    bottom: 0,
+                                },
+                            ]}
+                        >
+                            <Sidebar
+                                history={history}
+                                selectedId={selectedScan?.id ?? null}
+                                onSelectScan={handleSelectScan}
+                                onClearHistory={handleClearHistory}
+                                loading={historyLoading}
+                                onNewScan={handleNewScan}
+                            />
                         </Animated.View>
                     </>
                 )}
@@ -173,8 +224,10 @@ const styles = StyleSheet.create({
     topBarLeft: { flexDirection: 'row', alignItems: 'center', gap: 8 },
     topBarBrand: { flexDirection: 'row', alignItems: 'center', gap: 8 },
     iconBtn: {
-        width: 38, height: 38,
-        justifyContent: 'center', alignItems: 'center',
+        width: 38,
+        height: 38,
+        justifyContent: 'center',
+        alignItems: 'center',
         borderRadius: BorderRadius.sm,
         ...Glass.surface,
     },
@@ -189,30 +242,45 @@ const styles = StyleSheet.create({
     },
     topBarRight: { flexDirection: 'row', alignItems: 'center', gap: 10 },
     avatarGlow: {
-        width: 36, height: 36, borderRadius: 18,
-        justifyContent: 'center', alignItems: 'center',
+        width: 36,
+        height: 36,
+        borderRadius: 18,
+        justifyContent: 'center',
+        alignItems: 'center',
         borderWidth: 1.5,
         borderColor: Colors.accentMuted,
     },
     avatar: {
-        width: 30, height: 30, borderRadius: 15,
+        width: 30,
+        height: 30,
+        borderRadius: 15,
         backgroundColor: Colors.primary,
-        justifyContent: 'center', alignItems: 'center',
+        justifyContent: 'center',
+        alignItems: 'center',
     },
     avatarText: { color: Colors.white, fontSize: FontSize.sm, fontWeight: '700' },
     userName: { color: Colors.textSecondary, fontSize: FontSize.sm, maxWidth: 140 },
     logoutBtn: {
-        width: 36, height: 36,
-        justifyContent: 'center', alignItems: 'center',
+        width: 36,
+        height: 36,
+        justifyContent: 'center',
+        alignItems: 'center',
         borderRadius: BorderRadius.sm,
         ...Glass.surface,
     },
     mainContent: { flex: 1, flexDirection: 'row' },
     sidebarFixed: { borderRightWidth: 1, borderRightColor: Colors.border },
     workspaceArea: { flex: 1 },
-    backdrop: { ...StyleSheet.absoluteFillObject, backgroundColor: Colors.overlay, zIndex: 10 },
+    backdrop: {
+        ...StyleSheet.absoluteFillObject,
+        backgroundColor: Colors.overlay,
+        zIndex: 10,
+    },
     sidebarAnimated: {
-        position: 'absolute', left: 0, zIndex: 20,
-        backgroundColor: Colors.surfaceSolid, ...Shadows.lg,
+        position: 'absolute',
+        left: 0,
+        zIndex: 20,
+        backgroundColor: Colors.surfaceSolid,
+        ...Shadows.lg,
     },
 });

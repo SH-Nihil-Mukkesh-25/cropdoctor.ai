@@ -31,10 +31,18 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
         const { data: { subscription } } = supabase.auth.onAuthStateChange(async (_event, session) => {
             if (session?.user) {
+                // Fetch the custom preferred_language on session restore
+                const { data: profile } = await supabase
+                    .from('profiles')
+                    .select('name, preferred_language')
+                    .eq('id', session.user.id)
+                    .single();
+
                 setUser({
                     id: session.user.id,
                     email: session.user.email || '',
-                    name: session.user.user_metadata?.name || session.user.email?.split('@')[0],
+                    name: profile?.name || session.user.user_metadata?.name || session.user.email?.split('@')[0],
+                    preferredLanguage: profile?.preferred_language,
                 });
             } else {
                 setUser(null);

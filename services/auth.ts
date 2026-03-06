@@ -15,10 +15,18 @@ export async function login(email: string, password: string): Promise<User> {
         throw new Error('Login failed. Please try again.');
     }
 
+    // Fetch extended profile data including preferred_language
+    const { data: profile } = await supabase
+        .from('profiles')
+        .select('name, preferred_language')
+        .eq('id', data.user.id)
+        .single();
+
     return {
         id: data.user.id,
         email: data.user.email || email,
-        name: data.user.user_metadata?.name || email.split('@')[0],
+        name: profile?.name || data.user.user_metadata?.name || email.split('@')[0],
+        preferredLanguage: profile?.preferred_language,
     };
 }
 
@@ -41,10 +49,12 @@ export async function signup(email: string, password: string): Promise<User> {
         throw new Error('Signup failed. Please try again.');
     }
 
+    // New users get the default en-IN language set by the DB trigger/schema
     return {
         id: data.user.id,
         email: data.user.email || email,
         name: data.user.user_metadata?.name || email.split('@')[0],
+        preferredLanguage: 'en-IN',
     };
 }
 
@@ -60,10 +70,17 @@ export async function getCurrentUser(): Promise<User | null> {
         const { data: { session } } = await supabase.auth.getSession();
         if (!session?.user) return null;
 
+        const { data: profile } = await supabase
+            .from('profiles')
+            .select('name, preferred_language')
+            .eq('id', session.user.id)
+            .single();
+
         return {
             id: session.user.id,
             email: session.user.email || '',
-            name: session.user.user_metadata?.name || session.user.email?.split('@')[0],
+            name: profile?.name || session.user.user_metadata?.name || session.user.email?.split('@')[0],
+            preferredLanguage: profile?.preferred_language,
         };
     } catch {
         return null;

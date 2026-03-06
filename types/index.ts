@@ -1,7 +1,9 @@
 export interface DetectionResult {
     disease: string;
     confidence: number;
-    recommendation: string;
+    recommendations: string[];
+    key_points: string[];
+    action_steps: string[];
 }
 
 export interface ScanRecord {
@@ -16,6 +18,7 @@ export interface User {
     id: string;
     email: string;
     name?: string;
+    preferredLanguage?: string;
 }
 
 export interface UploadState {

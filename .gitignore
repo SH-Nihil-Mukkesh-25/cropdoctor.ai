@@ -3,6 +3,8 @@
 # dependencies
 node_modules/
 
+.env
+
 # Expo
 .expo/
 dist/
@@ -32,10 +34,31 @@ yarn-error.*
 
 # local env files
 .env*.local
-
+``
 # typescript
 *.tsbuildinfo
 
 # generated native folders
 /ios
 /android
+
+# Logs
+logs
+*.log
+
+# IDE
+.vscode/
+.idea/
+
+# Expo dev files
+.expo-shared/
+
+# Testing
+coverage/
+
+# Temporary files
+*.tmp
+*.temp
+
+# Supabase local
+.supabase/
