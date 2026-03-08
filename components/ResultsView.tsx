@@ -1,7 +1,7 @@
 import React, { useEffect, useRef, useState, useMemo } from 'react';
 import { View, Text, Image, ScrollView, TouchableOpacity, StyleSheet, Animated, Easing, Platform, ActivityIndicator } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import { Audio } from 'expo-av'; 
+import { Audio } from 'expo-av';
 import { DetectionResult } from '../types';
 import { Colors, Spacing, BorderRadius, FontSize, Shadows, Glass } from '../constants/theme';
 import ConfidenceGauge from './ConfidenceGauge';
@@ -50,7 +50,7 @@ export default function ResultsView({ imageUri, result, onNewScan, isFromHistory
     const [selectedLanguage, setSelectedLanguage] = useState<string>('en-IN');
     const [isTranslating, setIsTranslating] = useState<boolean>(false);
     const [isPlaying, setIsPlaying] = useState<boolean>(false);
-    
+
     // Voice QA State
     const [recording, setRecording] = useState<Audio.Recording | null>(null);
     const [isRecording, setIsRecording] = useState(false);
@@ -94,9 +94,11 @@ export default function ResultsView({ imageUri, result, onNewScan, isFromHistory
         ]).start();
 
         if (Platform.OS !== 'web') {
-            Audio.setAudioModeAsync({
-                playsInSilentModeIOS: true,
-                allowsRecordingIOS: false,
+            Audio.requestPermissionsAsync().then(() => {
+                Audio.setAudioModeAsync({
+                    playsInSilentModeIOS: true,
+                    allowsRecordingIOS: true,
+                });
             });
         }
 
@@ -106,7 +108,7 @@ export default function ResultsView({ imageUri, result, onNewScan, isFromHistory
         };
     }, []);
 
-     useEffect(() => {
+    useEffect(() => {
         const handleTranslation = async () => {
             if (selectedLanguage === 'en-IN') {
                 setDisplayContent(baseContent);
@@ -123,19 +125,19 @@ export default function ResultsView({ imageUri, result, onNewScan, isFromHistory
             const safeTranslate = async (text: string, lang: string) => {
                 if (!text) return text;
                 try {
-                    await new Promise(resolve => setTimeout(resolve, 300)); 
+                    await new Promise(resolve => setTimeout(resolve, 300));
                     return await translateText(text, lang);
                 } catch (e) {
                     console.warn(`Translation failed for "${text}". Using original text.`);
-                    return text; 
+                    return text;
                 }
             };
 
             try {
                 const translatedDisease = await safeTranslate(baseContent.disease, selectedLanguage);
                 const translatedSeverity = await safeTranslate(baseContent.severityDesc, selectedLanguage);
-                const translatedSpoken = baseContent.spoken_response 
-                    ? await safeTranslate(baseContent.spoken_response, selectedLanguage) 
+                const translatedSpoken = baseContent.spoken_response
+                    ? await safeTranslate(baseContent.spoken_response, selectedLanguage)
                     : '';
 
                 const translatedDict: any = {
@@ -178,7 +180,7 @@ export default function ResultsView({ imageUri, result, onNewScan, isFromHistory
     const triggerPlayback = async (contentToPlay: any, langToPlay: string) => {
         try {
             setIsPlaying(true);
-            
+
             // Prioritize the natural conversational response if available
             let textToRead = '';
             if (contentToPlay.spoken_response) {
@@ -209,7 +211,7 @@ export default function ResultsView({ imageUri, result, onNewScan, isFromHistory
 
                 const audio = new window.Audio(blobUrl);
                 webAudioRef.current = audio;
-                
+
                 audio.onended = () => { setIsPlaying(false); webAudioRef.current = null; URL.revokeObjectURL(blobUrl); };
                 audio.onerror = (e) => { setIsPlaying(false); webAudioRef.current = null; URL.revokeObjectURL(blobUrl); };
                 await audio.play();
@@ -247,12 +249,6 @@ export default function ResultsView({ imageUri, result, onNewScan, isFromHistory
     // --- VOICE RECORDING LOGIC ---
     const startRecording = async () => {
         try {
-            await Audio.requestPermissionsAsync();
-            await Audio.setAudioModeAsync({
-                allowsRecordingIOS: true,
-                playsInSilentModeIOS: true,
-            });
-
             const { recording: newRecording } = await Audio.Recording.createAsync(
                 Audio.RecordingOptionsPresets.HIGH_QUALITY
             );
@@ -272,8 +268,7 @@ export default function ResultsView({ imageUri, result, onNewScan, isFromHistory
 
         try {
             await recording.stopAndUnloadAsync();
-            await Audio.setAudioModeAsync({ allowsRecordingIOS: false });
-            
+
             const uri = recording.getURI();
             if (uri) {
                 let blob;
@@ -281,13 +276,13 @@ export default function ResultsView({ imageUri, result, onNewScan, isFromHistory
                     const response = await fetch(uri);
                     blob = await response.blob();
                 }
-                
+
                 // 1. Get Transcription (STT auto-detects language)
                 const transcript = await transcribeAudio(uri, blob);
-                
+
                 // 2. Ask Gemini (Gemini answers in user's language)
                 const aiResponse = await analyzeWithUserQuery(imageUri, transcript);
-                
+
                 // 3. Set the new AI content, mapping the spoken_response field!
                 const newContent = {
                     disease: aiResponse.disease,
@@ -295,14 +290,14 @@ export default function ResultsView({ imageUri, result, onNewScan, isFromHistory
                     key_points: aiResponse.key_points,
                     action_steps: aiResponse.action_steps,
                     severityDesc: "Answer generated based on your voice query.",
-                    spoken_response: aiResponse.spoken_response 
+                    spoken_response: aiResponse.spoken_response
                 };
 
                 const detectedLang = aiResponse.language_code || 'en-IN';
-                
+
                 // Reset cache to strictly reflect the new conversation context
                 translationsCache.current = { [detectedLang]: newContent };
-                
+
                 setBaseContent(newContent);
                 setSelectedLanguage(detectedLang);
                 setDisplayContent(newContent);
@@ -521,6 +516,51 @@ export default function ResultsView({ imageUri, result, onNewScan, isFromHistory
                             </Text>
                         </View>
                     )}
+
+                    {activeToggles.explainability && (
+                        <View style={styles.expandedCard}>
+                            <View style={styles.expandedHeader}>
+                                <Ionicons name="git-network-outline" size={18} color={Colors.accent} />
+                                <Text style={styles.expandedTitle}>Explainability Analysis</Text>
+                            </View>
+                            <Text style={[styles.expandedDesc, { marginBottom: Spacing.sm }]}>{explainability.modelBasis}</Text>
+                            {explainability.factors.map((factor, idx) => (
+                                <View key={idx} style={{ marginBottom: Spacing.sm }}>
+                                    <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, marginBottom: 2 }}>
+                                        <Ionicons name={getImpactIcon(factor.impact) as any} size={14} color={getImpactColor(factor.impact)} />
+                                        <Text style={{ color: Colors.text, fontWeight: '600', fontSize: FontSize.sm }}>{factor.name}</Text>
+                                    </View>
+                                    <Text style={styles.expandedDesc}>{factor.detail}</Text>
+                                </View>
+                            ))}
+                            <Text style={[styles.expandedDesc, { marginTop: Spacing.sm, fontStyle: 'italic', fontSize: FontSize.xs }]}>{explainability.limitations}</Text>
+                        </View>
+                    )}
+
+                    {activeToggles.yieldLoss && (
+                        <View style={styles.expandedCard}>
+                            <View style={styles.expandedHeader}>
+                                <Ionicons name="trending-down-outline" size={18} color={Colors.warning} />
+                                <Text style={styles.expandedTitle}>Yield Loss Assessment</Text>
+                            </View>
+                            <View style={[styles.severityLabelRow, { marginBottom: Spacing.sm }]}>
+                                <Text style={styles.severityLevel}>Estimated Loss</Text>
+                                <Text style={[styles.severityScore, { color: Colors.warning, fontSize: FontSize.lg }]}>{yieldLoss.estimatedLossPercent}%</Text>
+                            </View>
+                            <Text style={[styles.expandedDesc, { marginBottom: Spacing.sm }]}>{yieldLoss.economicImpact}</Text>
+
+                            <View style={{ gap: Spacing.xs, marginTop: Spacing.xs }}>
+                                <Text style={styles.expandedDesc}>
+                                    <Text style={{ fontWeight: '700', color: Colors.text }}>Time to Action: </Text>
+                                    {yieldLoss.timeToAction}
+                                </Text>
+                                <Text style={styles.expandedDesc}>
+                                    <Text style={{ fontWeight: '700', color: Colors.text }}>Recovery Potential: </Text>
+                                    {yieldLoss.recoveryPotential}
+                                </Text>
+                            </View>
+                        </View>
+                    )}
                 </Animated.View>
 
                 <TouchableOpacity style={styles.newScanBtn} onPress={onNewScan} activeOpacity={0.8}>
@@ -553,7 +593,7 @@ export default function ResultsView({ imageUri, result, onNewScan, isFromHistory
 const styles = StyleSheet.create({
     container: { flex: 1, position: 'relative' },
     content: { padding: Spacing.lg, gap: Spacing.md, paddingBottom: 120 /* extra padding for fab */ },
-    
+
     // FAB Styles
     fabContainer: {
         position: 'absolute',
